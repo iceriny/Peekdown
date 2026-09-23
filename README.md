@@ -54,6 +54,10 @@ cargo build --release
 
 Output: `target/release/peekdown.exe`
 
+## Releases
+
+Push a version tag matching `Cargo.toml` (for example, `v1.2.1`). GitHub Actions builds the Windows executable and publishes it as a GitHub Release asset. The workflow uses the repository's built-in `GITHUB_TOKEN`; no personal access token or secret is needed.
+
 To use Peekdown as the default app for `.md` or `.txt`, open the gear menu in Peekdown and select **Set .md and .txt default apps…**. Peekdown registers itself for the current Windows user and opens its Default apps page. Select Peekdown for each extension there. Keep the executable at the same path after choosing it.
 
 ## Tech Stack

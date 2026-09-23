@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check tag matches Cargo version
+        shell: pwsh
+        run: |
+          $manifest = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+          $version = ($manifest.packages | Where-Object { $_.name -eq 'peekdown' }).version
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $env:GITHUB_REF_NAME does not match Cargo version v$version"
+          }
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: cargo build --release --locked
+
+      - name: Prepare release asset
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Copy-Item target/release/peekdown.exe "dist/peekdown-$env:GITHUB_REF_NAME-windows-x64.exe"
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $asset = "dist/peekdown-$env:GITHUB_REF_NAME-windows-x64.exe"
+          gh release create $env:GITHUB_REF_NAME $asset --verify-tag --generate-notes
