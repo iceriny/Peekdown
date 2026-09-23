@@ -4,6 +4,7 @@ use tao::window::Window;
 use wry::WebView;
 
 use crate::file_ops;
+use crate::file_association;
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -15,6 +16,8 @@ struct IpcMessage {
     path: Option<String>,
     #[serde(default)]
     title: Option<String>,
+    #[serde(default)]
+    language: Option<String>,
 }
 
 pub fn handle_ipc_message(
@@ -33,7 +36,8 @@ pub fn handle_ipc_message(
 
     match parsed.command.as_str() {
         "open_file" => {
-            let path = parsed.path.or_else(file_ops::pick_open_file);
+            let language = parsed.language.as_deref().unwrap_or("en");
+            let path = parsed.path.or_else(|| file_ops::pick_open_file(language));
             if let Some(p) = path {
                 match file_ops::read_file(&p) {
                     Ok(contents) => {
@@ -42,9 +46,7 @@ pub fn handle_ipc_message(
                             "path": p
                         }));
                     }
-                    Err(e) => send_to_js(webview, "error", &serde_json::json!({
-                        "message": format!("Failed to open file: {e}")
-                    })),
+                    Err(e) => send_error(webview, "open", &e.to_string()),
                 }
             }
         }
@@ -57,17 +59,15 @@ pub fn handle_ipc_message(
                                 "path": path
                             }));
                         }
-                        Err(e) => send_to_js(webview, "error", &serde_json::json!({
-                            "message": format!("Failed to save: {e}")
-                        })),
+                        Err(e) => send_error(webview, "save", &e.to_string()),
                     }
                 } else {
-                    handle_save_as(webview, parsed.content);
+                    handle_save_as(webview, parsed.content, parsed.language.as_deref().unwrap_or("en"));
                 }
             }
         }
         "save_as" => {
-            handle_save_as(webview, parsed.content);
+            handle_save_as(webview, parsed.content, parsed.language.as_deref().unwrap_or("en"));
         }
         "set_title" => {
             if let Some(title) = parsed.title {
@@ -88,6 +88,12 @@ pub fn handle_ipc_message(
                 (inner_size.width, inner_size.height),
             );
             std::process::exit(0);
+        }
+        "register_file_associations" => {
+            match file_association::register_and_open_settings(parsed.language.as_deref().unwrap_or("en")) {
+                Ok(()) => send_to_js(webview, "associations_registered", &serde_json::json!({})),
+                Err(e) => send_error(webview, "association", &e),
+            }
         }
         "read_image" => {
             if let Some(ref path) = parsed.path {
@@ -123,9 +129,7 @@ pub fn handle_ipc_message(
                             "path": p
                         }));
                     }
-                    Err(e) => send_to_js(webview, "error", &serde_json::json!({
-                        "message": format!("Failed to open file: {e}")
-                    })),
+                    Err(e) => send_error(webview, "open", &e.to_string()),
                 }
             } else if let Some(content) = pending_content {
                 let title = pending_title.unwrap_or_else(|| "stdin".to_string());
@@ -142,21 +146,27 @@ pub fn handle_ipc_message(
 fn handle_save_as(
     webview: &WebView,
     content: Option<String>,
+    language: &str,
 ) {
     if let Some(content) = content {
-        if let Some(path) = file_ops::pick_save_file() {
+        if let Some(path) = file_ops::pick_save_file(language) {
             match file_ops::write_file(&path, &content) {
                 Ok(_) => {
                     send_to_js(webview, "file_saved", &serde_json::json!({
                         "path": path
                     }));
                 }
-                Err(e) => send_to_js(webview, "error", &serde_json::json!({
-                    "message": format!("Failed to save: {e}")
-                })),
+                Err(e) => send_error(webview, "save", &e.to_string()),
             }
         }
     }
+}
+
+fn send_error(webview: &WebView, kind: &str, detail: &str) {
+    send_to_js(webview, "error", &serde_json::json!({
+        "kind": kind,
+        "detail": detail
+    }));
 }
 
 fn send_to_js(webview: &WebView, event: &str, data: &serde_json::Value) {

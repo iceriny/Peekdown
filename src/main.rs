@@ -14,6 +14,7 @@ use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, SWP_ASYNCWINDOWPOS, 
 use wry::{WebViewBuilder, WebViewBuilderExtWindows, WebViewExtWindows};
 
 mod file_ops;
+mod file_association;
 mod ipc;
 mod state;
 mod window_state;
@@ -21,6 +22,7 @@ mod window_state;
 const INDEX_HTML: &str = include_str!("frontend/index.html");
 const STYLE_CSS: &str = include_str!("frontend/style.css");
 const APP_JS: &str = include_str!("frontend/app.js");
+const I18N_JS: &str = include_str!("frontend/i18n.js");
 const EDITOR_JS: &str = include_str!("frontend/editor.js");
 const PREVIEW_JS: &str = include_str!("frontend/preview.js");
 const TABS_JS: &str = include_str!("frontend/tabs.js");
@@ -254,9 +256,10 @@ fn escape_for_script_tag(js: &str) -> String {
 fn build_html() -> String {
     // Build script tags with escaped content
     let scripts = format!(
-        "<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>",
+        "<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>",
         escape_for_script_tag(HLJS),
         escape_for_script_tag(MARKED_JS),
+        escape_for_script_tag(I18N_JS),
         escape_for_script_tag(PREVIEW_JS),
         escape_for_script_tag(TABS_JS),
         escape_for_script_tag(EDITOR_JS),

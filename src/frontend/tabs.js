@@ -20,9 +20,10 @@ var TabManager = (function() {
     if (active && !active.path && !active.dirty && active.content === '' && path) {
       active.path = normalizePath(path);
       active.filename = path.split(/[/\\]/).pop();
+      active.isUntitled = false;
       active.content = content != null ? content : '';
       active.dirty = false;
-      active.mode = 'preview';
+      active.mode = /\.txt$/i.test(path) ? 'edit' : 'preview';
       restoreTabState(active);
       renderTabBar();
       updateWindowTitle();
@@ -33,10 +34,11 @@ var TabManager = (function() {
     var tab = {
       id: id,
       path: path ? normalizePath(path) : null,
-      filename: forceFilename || (path ? path.split(/[/\\]/).pop() : 'Untitled'),
+      filename: forceFilename || (path ? path.split(/[/\\]/).pop() : t('untitled')),
+      isUntitled: !path && !forceFilename,
       content: content != null ? content : '',
       dirty: false,
-      mode: forceMode || (path ? 'preview' : 'edit'),
+      mode: forceMode || (path && !/\.txt$/i.test(path) ? 'preview' : 'edit'),
       scrollTop: 0,
       cursorStart: 0,
       cursorEnd: 0,
@@ -52,7 +54,7 @@ var TabManager = (function() {
     if (idx === -1) return;
     var tab = tabs[idx];
     if (tab.dirty) {
-      if (!confirm('Unsaved changes in "' + tab.filename + '". Close anyway?')) return;
+      if (!confirm(t('closeTabUnsaved', tab.filename))) return;
     }
     tabs.splice(idx, 1);
     if (tabs.length === 0) {
@@ -196,6 +198,7 @@ var TabManager = (function() {
       var close = document.createElement('span');
       close.className = 'tab-close';
       close.innerHTML = '&times;';
+      close.title = t('closeTab');
       close.addEventListener('click', function(e) {
         e.stopPropagation();
         closeTab(tab.id);
@@ -245,10 +248,23 @@ var TabManager = (function() {
     var tab = tabs.find(function(t) { return t.id === (id || activeTabId); });
     if (tab) {
       tab.path = path ? normalizePath(path) : null;
-      tab.filename = path ? path.split(/[/\\]/).pop() : 'Untitled';
+      tab.filename = path ? path.split(/[/\\]/).pop() : t('untitled');
+      tab.isUntitled = !path;
       renderTabBar();
       updateWindowTitle();
       document.getElementById('status-file').textContent = tab.filename;
+    }
+  }
+
+  function localizeUntitled() {
+    tabs.forEach(function(tab) {
+      if (tab.isUntitled) tab.filename = t('untitled');
+    });
+    renderTabBar();
+    var tab = getActiveTab();
+    if (tab) {
+      document.getElementById('status-file').textContent = tab.filename;
+      updateWindowTitle();
     }
   }
 
@@ -263,6 +279,7 @@ var TabManager = (function() {
     findTabByPath: findTabByPath,
     getActiveTab: getActiveTab,
     hasAnyDirty: hasAnyDirty,
-    updateTabPath: updateTabPath
+    updateTabPath: updateTabPath,
+    localizeUntitled: localizeUntitled
   };
 })();

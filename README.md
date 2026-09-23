@@ -22,7 +22,8 @@ Built with Rust + WebView2. No installer, no runtime dependencies, no Electron.
 - **Adjustable preview width** — drag the edge to resize
 - **Recent files** — quick-open panel on empty tabs
 - **Cross-mode selection** — selected text stays selected when toggling edit/preview
-- **File associations** — use as default `.md` viewer via "Open With"
+- **English and Chinese** — switch language in Settings; the choice is remembered
+- **File associations** — register Peekdown for `.md` and `.txt` from Settings, then choose it in Windows Default apps
 - **Single executable** — everything embedded, nothing to install
 
 ## Keyboard Shortcuts
@@ -52,6 +53,8 @@ cargo build --release
 ```
 
 Output: `target/release/peekdown.exe`
+
+To use Peekdown as the default app for `.md` or `.txt`, open the gear menu in Peekdown and select **Set .md and .txt default apps…**. Peekdown registers itself for the current Windows user and opens its Default apps page. Select Peekdown for each extension there. Keep the executable at the same path after choosing it.
 
 ## Tech Stack
 

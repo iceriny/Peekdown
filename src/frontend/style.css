@@ -188,6 +188,38 @@ html, body {
   color: #fff;
 }
 
+#settings-menu {
+  display: none;
+  position: fixed;
+  top: 42px;
+  right: 103px;
+  z-index: 200;
+  width: 276px;
+  padding: 12px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+}
+
+#settings-menu.open { display: block; }
+.settings-label { color: var(--text-secondary); margin-bottom: 8px; }
+.settings-languages { display: flex; gap: 6px; margin-bottom: 12px; }
+#settings-menu button {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  padding: 7px 10px;
+}
+#settings-menu button:hover { border-color: var(--accent); }
+.settings-languages button.selected { color: var(--accent); border-color: var(--accent); }
+#settings-association { width: 100%; text-align: left; }
+.settings-hint { color: var(--text-dim); font-size: 11px; line-height: 1.45; margin-top: 8px; }
+
 /* ============================================
    TAB BAR
    ============================================ */

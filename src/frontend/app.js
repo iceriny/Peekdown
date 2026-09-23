@@ -1,6 +1,6 @@
 // IPC Bridge
 function sendToRust(command, data) {
-  var msg = JSON.stringify(Object.assign({ command: command }, data || {}));
+  var msg = JSON.stringify(Object.assign({ command: command, language: I18n.getLanguage() }, data || {}));
   window.ipc.postMessage(msg);
 }
 
@@ -22,7 +22,10 @@ window.__fromRust = function(event, data) {
       TabManager.createTab(null, data.content, 'preview', data.title || 'stdin');
       break;
     case 'error':
-      showError(data.message);
+      showError(data.kind ? t(data.kind + 'Error', data.detail) : data.message);
+      break;
+    case 'associations_registered':
+      showStatus(t('associationReady'), 5000);
       break;
   }
 };
@@ -144,7 +147,7 @@ function toggleMode() {
     ($.editorContainer || document.getElementById('editor-container')).classList.remove('active');
     ($.previewContainer || document.getElementById('preview-container')).classList.add('active');
     document.getElementById('btn-toggle').classList.add('active');
-    document.getElementById('status-mode').textContent = 'PREVIEW';
+    document.getElementById('status-mode').textContent = t('preview');
     iconPreview.style.display = 'none';
     iconEdit.style.display = '';
     currentMode = 'preview';
@@ -163,7 +166,7 @@ function toggleMode() {
     pc.classList.remove('active');
     ($.editorContainer || document.getElementById('editor-container')).classList.add('active');
     document.getElementById('btn-toggle').classList.remove('active');
-    document.getElementById('status-mode').textContent = 'EDIT';
+    document.getElementById('status-mode').textContent = t('edit');
     iconPreview.style.display = '';
     iconEdit.style.display = 'none';
     currentMode = 'edit';
@@ -183,16 +186,21 @@ function setTitle(title) {
 }
 
 function onFileSaved() {
+  showStatus(t('saved'), 2000);
+}
+
+function showStatus(message, duration) {
   var info = document.getElementById('status-info');
-  info.textContent = 'Saved';
-  setTimeout(function() { info.textContent = ''; }, 2000);
+  info.textContent = message;
+  info.style.color = '';
+  clearTimeout(showStatus._timer);
+  showStatus._timer = setTimeout(function() { info.textContent = ''; }, duration);
 }
 
 function showError(message) {
+  showStatus(t('error') + message, 5000);
   var info = document.getElementById('status-info');
-  info.textContent = 'Error: ' + message;
   info.style.color = '#c15050';
-  setTimeout(function() { info.textContent = ''; info.style.color = ''; }, 5000);
 }
 
 // Split View
@@ -207,7 +215,7 @@ function toggleSplit() {
     ($.previewContainer || document.getElementById('preview-container')).classList.remove('active');
     currentMode = 'edit';
     document.getElementById('btn-toggle').classList.remove('active');
-    document.getElementById('status-mode').textContent = 'EDIT';
+    document.getElementById('status-mode').textContent = t('edit');
     iconPreview.style.display = '';
     iconEdit.style.display = 'none';
     ($.editor || document.getElementById('editor')).focus();
@@ -230,7 +238,7 @@ function toggleSplit() {
     resolveLocalImages();
     currentMode = 'edit';
     document.getElementById('btn-toggle').classList.remove('active');
-    document.getElementById('status-mode').textContent = 'SPLIT';
+    document.getElementById('status-mode').textContent = t('splitMode');
     iconPreview.style.display = '';
     iconEdit.style.display = 'none';
     document.getElementById('editor').focus();
@@ -254,8 +262,10 @@ function updateSplitPreview() {
 // Word count
 function updateWordCount() {
   var text = ($.editor || document.getElementById('editor')).value;
-  var words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  document.getElementById('status-counts').textContent = words + ' word' + (words !== 1 ? 's' : '');
+  var words = I18n.getLanguage() === 'zh-CN'
+    ? text.replace(/\s/g, '').length
+    : (text.trim() ? text.trim().split(/\s+/).length : 0);
+  document.getElementById('status-counts').textContent = t('words', words);
 }
 
 // Recent Files
@@ -285,7 +295,7 @@ function showRecentPanel() {
   panel.innerHTML = '';
   var title = document.createElement('div');
   title.className = 'recent-title';
-  title.textContent = 'Recent Files';
+  title.textContent = t('recent');
   panel.appendChild(title);
   recent.forEach(function(r) {
     var item = document.createElement('div');
@@ -332,7 +342,7 @@ function updateTOC() {
   if (headings.length === 0) {
     var empty = document.createElement('div');
     empty.className = 'toc-empty';
-    empty.textContent = 'No headings';
+    empty.textContent = t('noHeadings');
     list.appendChild(empty);
     return;
   }
@@ -564,9 +574,9 @@ function findPrev() {
 function updateFindCount() {
   var el = document.getElementById('find-count');
   if (findState.matches.length === 0) {
-    el.textContent = document.getElementById('find-input').value ? 'No results' : '';
+    el.textContent = document.getElementById('find-input').value ? t('noResults') : '';
   } else {
-    el.textContent = (findState.current + 1) + ' of ' + findState.matches.length;
+    el.textContent = t('of', findState.current + 1, findState.matches.length);
   }
 }
 
@@ -638,7 +648,7 @@ document.getElementById('btn-minimize').addEventListener('click', function() { s
 document.getElementById('btn-maximize').addEventListener('click', function() { sendToRust('window_maximize'); });
 document.getElementById('btn-close').addEventListener('click', function() {
   if (TabManager.hasAnyDirty()) {
-    if (!confirm('You have unsaved changes. Close anyway?')) return;
+    if (!confirm(t('closeUnsaved'))) return;
   }
   sendToRust('window_close');
 });
@@ -650,6 +660,34 @@ document.getElementById('btn-save').addEventListener('click', doSave);
 document.getElementById('btn-toggle').addEventListener('click', toggleMode);
 document.getElementById('btn-split').addEventListener('click', toggleSplit);
 document.getElementById('btn-toc').addEventListener('click', toggleTOC);
+
+// Settings
+function closeSettings() {
+  document.getElementById('settings-menu').classList.remove('open');
+  document.getElementById('btn-settings').setAttribute('aria-expanded', 'false');
+}
+
+document.getElementById('btn-settings').addEventListener('click', function(e) {
+  e.stopPropagation();
+  var menu = document.getElementById('settings-menu');
+  var open = menu.classList.toggle('open');
+  this.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+document.getElementById('settings-menu').addEventListener('click', function(e) { e.stopPropagation(); });
+document.addEventListener('click', closeSettings);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSettings();
+});
+document.querySelectorAll('[data-language]').forEach(function(button) {
+  button.addEventListener('click', function() {
+    I18n.setLanguage(this.getAttribute('data-language'));
+    closeSettings();
+  });
+});
+document.getElementById('settings-association').addEventListener('click', function() {
+  closeSettings();
+  sendToRust('register_file_associations');
+});
 
 // Theme Toggle
 function setTheme(theme) {
@@ -670,7 +708,6 @@ document.addEventListener('DOMContentLoaded', function() {
   try { saved = localStorage.getItem('peekdown-theme'); } catch(e) {}
   if (saved) setTheme(saved);
   TabManager.createTab(null, '');
-  updateWordCount();
-  showRecentPanel();
+  I18n.apply();
   sendToRust('ready');
 });
