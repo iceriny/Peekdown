@@ -1,0 +1,16 @@
+{
+  "name": "peekdown-frontend",
+  "private": true,
+  "scripts": {
+    "build:math": "node scripts/build-math.mjs",
+    "test": "node --test tests/math.test.cjs"
+  },
+  "devDependencies": {
+    "katex": "0.18.9",
+    "marked": "15.0.7",
+    "marked-katex-extension": "5.1.13"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

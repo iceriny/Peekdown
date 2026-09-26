@@ -56,7 +56,7 @@ var splitMode = false;
 // Cross-mode selection helpers
 function selectInPreview(text, ratio) {
   var preview = document.getElementById('preview');
-  var walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT);
+  var walker = createPreviewTextWalker(preview);
   var nodes = [], node, fullText = '';
   while (node = walker.nextNode()) {
     nodes.push({ node: node, start: fullText.length });
@@ -505,7 +505,7 @@ function doFind(term) {
     }
   } else {
     var preview = $.preview || document.getElementById('preview');
-    var walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT);
+    var walker = createPreviewTextWalker(preview);
     var node, ranges = [], termLower = term.toLowerCase();
     while (node = walker.nextNode()) {
       var nodeText = node.textContent.toLowerCase();

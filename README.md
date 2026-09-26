@@ -1,6 +1,6 @@
 # Peekdown
 
-A lightweight native Windows markdown viewer and editor. Notepad-fast startup, Obsidian-pretty rendering — in a single ~800 KB executable.
+A lightweight native Windows markdown viewer and editor. Native startup, polished rendering — in a single executable.
 
 Built with Rust + WebView2. No installer, no runtime dependencies, no Electron.
 
@@ -13,6 +13,7 @@ Built with Rust + WebView2. No installer, no runtime dependencies, no Electron.
 - **Live preview** — rendered markdown with full GFM support (tables, task lists, footnotes)
 - **Split view** — side-by-side editor and preview with live sync (Ctrl+\\)
 - **Syntax highlighting** — 30+ languages via highlight.js
+- **LaTeX math** — inline `$...$`, display `$$...$$`, and `math` fences via KaTeX, fully offline
 - **Multi-tab** — open multiple files, auto-hides tab bar for single files
 - **Dark/Light themes** — Catppuccin Mocha and Latte color schemes
 - **Find in document** — Ctrl+F with match highlighting and navigation
@@ -46,13 +47,42 @@ Built with Rust + WebView2. No installer, no runtime dependencies, no Electron.
 
 ## Build
 
-Requires Rust and the WebView2 runtime (pre-installed on Windows 10/11).
+Requires Rust, Node.js 24+ / npm, and the WebView2 runtime (pre-installed on Windows 10/11).
+Node/npm are build tools only; the distributed executable does not need them.
 
 ```bash
-cargo build --release
+npm ci --ignore-scripts
+npm run build:math
+cargo build --release --locked
 ```
 
 Output: `target/release/peekdown.exe`
+
+The math build embeds KaTeX's scripts, styles, WOFF2 fonts and license notices;
+there are no runtime CDN requests or external asset folders. These assets add
+approximately 632 KiB before linking. Generated assets are ignored by Git;
+regenerate them after updating the locked math dependencies.
+
+Run the focused frontend checks after generating assets:
+
+```bash
+npm test
+```
+
+## Math examples
+
+Write `The complexity is $O(n \log n)$.` for an inline formula. For display math,
+put `$$` on separate lines with a blank line around the block:
+
+```markdown
+$$
+\sum_{i=1}^{n} i = \frac{n(n+1)}{2}
+$$
+```
+
+See [the math examples and implementation notes](docs/math.md) for matrices,
+aligned equations, literal dollar signs, supported syntax and library updates.
+This renders LaTeX math inside Markdown, not complete `.tex` documents.
 
 ## Releases
 
@@ -66,7 +96,8 @@ To use Peekdown as the default app for `.md` or `.txt`, open the gear menu in Pe
 - **WebView2** — rendering engine (Edge, pre-installed on Win10/11)
 - **marked.js** — markdown to HTML
 - **highlight.js** — code syntax highlighting
-- **No Electron, no Node, no bundler** — all frontend assets are embedded at compile time via `include_str!`
+- **KaTeX + marked-katex-extension** — synchronous math rendering integrated with the existing parser
+- **No Electron, no Node at runtime, no bundler** — all frontend assets are embedded at compile time via `include_str!`
 
 ## License
 

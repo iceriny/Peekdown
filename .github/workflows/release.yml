@@ -29,6 +29,17 @@ jobs:
             throw "Tag $env:GITHUB_REF_NAME does not match Cargo version v$version"
           }
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Prepare embedded math assets
+        run: |
+          npm ci --ignore-scripts
+          npm run build:math
+          npm test
+
       - name: Build Windows executable
         shell: pwsh
         run: cargo build --release --locked

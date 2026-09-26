@@ -28,6 +28,9 @@ const PREVIEW_JS: &str = include_str!("frontend/preview.js");
 const TABS_JS: &str = include_str!("frontend/tabs.js");
 const MARKED_JS: &str = include_str!("frontend/marked.min.js");
 const HLJS: &str = include_str!("frontend/highlight.min.js");
+const MATH_LIBRARIES_JS: &str = include_str!("frontend/vendor/math/libraries.js");
+const KATEX_CSS: &str = include_str!("frontend/vendor/math/katex.css");
+const MATH_CSS: &str = include_str!("frontend/math.css");
 
 #[derive(Debug)]
 enum UserEvent {
@@ -255,18 +258,16 @@ fn escape_for_script_tag(js: &str) -> String {
 
 fn build_html() -> String {
     // Build script tags with escaped content
-    let scripts = format!(
-        "<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>\n<script>{}</script>",
-        escape_for_script_tag(HLJS),
-        escape_for_script_tag(MARKED_JS),
-        escape_for_script_tag(I18N_JS),
-        escape_for_script_tag(PREVIEW_JS),
-        escape_for_script_tag(TABS_JS),
-        escape_for_script_tag(EDITOR_JS),
-        escape_for_script_tag(APP_JS),
-    );
+    let scripts = [
+        HLJS, MARKED_JS, MATH_LIBRARIES_JS, I18N_JS, PREVIEW_JS, TABS_JS, EDITOR_JS, APP_JS,
+    ]
+    .iter()
+    .map(|js| format!("<script>{}</script>", escape_for_script_tag(js)))
+    .collect::<Vec<_>>()
+    .join("\n");
+    let styles = format!("{}\n{}\n{}", STYLE_CSS, KATEX_CSS, MATH_CSS);
 
     INDEX_HTML
-        .replace("/* __CSS__ */", STYLE_CSS)
+        .replace("/* __CSS__ */", &styles)
         .replace("<!-- __SCRIPTS__ -->", &scripts)
 }

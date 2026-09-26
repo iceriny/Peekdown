@@ -2,3 +2,6 @@
 .claude/
 test.md
 test2.md
+
+/node_modules/
+/src/frontend/vendor/math/

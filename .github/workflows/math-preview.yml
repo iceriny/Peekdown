@@ -1,0 +1,38 @@
+name: Math preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: math-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Prepare embedded math assets
+        run: |
+          npm ci --ignore-scripts
+          npm run build:math
+      - name: Check math integration
+        run: npm test
+      - name: Build Windows executable
+        run: cargo build --release --locked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: peekdown-windows-x64
+          path: target/release/peekdown.exe
+          retention-days: 7

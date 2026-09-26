@@ -1,8 +1,21 @@
+// Tokenize math inside Marked, before Markdown can consume TeX backslashes or
+// underscores. The upstream extension also keeps ordinary code spans/fences literal.
+var mathOptions = {
+  nonStandard: true, // Allow formulas next to Chinese text without extra spaces.
+  throwOnError: false,
+  trust: false,
+  maxSize: 20,
+  maxExpand: 1000,
+};
+
 // Configure marked.js with highlight.js via custom renderer
 var renderer = new marked.Renderer();
 renderer.code = function(token) {
   var lang = (token.lang || '').trim();
   var code = token.text;
+  if (lang === 'math') {
+    return katex.renderToString(code, Object.assign({}, mathOptions, { displayMode: true })) + '\n';
+  }
   var highlighted;
   if (lang && hljs.getLanguage(lang)) {
     highlighted = hljs.highlight(code, { language: lang }).value;
@@ -18,6 +31,17 @@ marked.setOptions({
   gfm: true,
   renderer: renderer,
 });
+marked.use(markedKatex(mathOptions));
+
+// Search/select only the visible formula, not its duplicate MathML/TeX text.
+function createPreviewTextWalker(preview) {
+  return document.createTreeWalker(preview, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      return node.parentElement.closest('.katex-mathml')
+        ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+}
 
 // Post-process: resolve local images via IPC
 function resolveLocalImages() {
