@@ -1,0 +1,14 @@
+/* Keep long display equations inside the preview, including narrow split view. */
+#preview .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}
+
+/* KaTeX writes an inline error color; use the active Peekdown theme instead. */
+#preview .katex-error {
+  color: var(--danger) !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

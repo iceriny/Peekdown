@@ -2,15 +2,19 @@ name: Math preview
 
 on:
   push:
-    branches: [feat/latex-math-katex]
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
 
+concurrency:
+  group: math-preview-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  frontend:
-    runs-on: ubuntu-latest
+  check:
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,12 +22,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Resolve pinned math dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Prepare source snapshot for integration checks
-        run: tar -czf /tmp/peekdown-math-inputs.tar.gz --exclude=.git .
+          cache: npm
+      - name: Prepare embedded math assets
+        run: |
+          npm ci --ignore-scripts
+          npm run build:math
+      - name: Check math integration
+        run: npm test
+      - name: Build Windows executable
+        run: cargo build --release --locked
       - uses: actions/upload-artifact@v4
         with:
-          name: peekdown-math-inputs
-          path: /tmp/peekdown-math-inputs.tar.gz
-          retention-days: 1
+          name: peekdown-windows-x64
+          path: target/release/peekdown.exe
+          retention-days: 7
